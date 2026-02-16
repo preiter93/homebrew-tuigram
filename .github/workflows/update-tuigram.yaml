@@ -40,7 +40,7 @@ jobs:
       - name: Update formula
         run: |
           cat > Formula/tuigram.rb <<EOF
-          class tuigram < Formula
+          class Tuigram < Formula
             desc "tuigram: Project Aware Command Storage"
             homepage "https://github.com/preiter93/tuigram"
             version "$VERSION"
