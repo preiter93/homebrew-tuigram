@@ -1,0 +1,86 @@
+name: Update tuigram formula
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Released tuigram version (e.g. v0.1.0)"
+        required: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        run: |
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Download release artifacts
+        run: |
+          BASE="https://github.com/preiter93/tuigram/releases/download/$VERSION"
+
+          curl -fLO $BASE/tuigram-$VERSION-aarch64-apple-darwin.tar.gz
+          curl -fLO $BASE/tuigram-$VERSION-x86_64-apple-darwin.tar.gz
+          curl -fLO $BASE/tuigram-$VERSION-aarch64-unknown-linux-gnu.tar.gz
+          curl -fLO $BASE/tuigram-$VERSION-x86_64-unknown-linux-gnu.tar.gz
+
+      - name: Compute SHA256
+        run: |
+          echo "SHA_MAC_ARM=$(shasum -a 256 tuigram-$VERSION-aarch64-apple-darwin.tar.gz | awk '{print $1}')" >> $GITHUB_ENV
+          echo "SHA_MAC_INTEL=$(shasum -a 256 tuigram-$VERSION-x86_64-apple-darwin.tar.gz | awk '{print $1}')" >> $GITHUB_ENV
+          echo "SHA_LINUX_ARM=$(shasum -a 256 tuigram-$VERSION-aarch64-unknown-linux-gnu.tar.gz | awk '{print $1}')" >> $GITHUB_ENV
+          echo "SHA_LINUX_INTEL=$(shasum -a 256 tuigram-$VERSION-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')" >> $GITHUB_ENV
+
+      - name: Update formula
+        run: |
+          cat > Formula/tuigram.rb <<EOF
+          class tuigram < Formula
+            desc "tuigram: Project Aware Command Storage"
+            homepage "https://github.com/preiter93/tuigram"
+            version "$VERSION"
+            license "MIT"
+            head "https://github.com/preiter93/tuigram.git", branch: "main"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/preiter93/tuigram/releases/download/$VERSION/tuigram-$VERSION-aarch64-apple-darwin.tar.gz"
+                sha256 "$SHA_MAC_ARM"
+              else
+                url "https://github.com/preiter93/tuigram/releases/download/$VERSION/tuigram-$VERSION-x86_64-apple-darwin.tar.gz"
+                sha256 "$SHA_MAC_INTEL"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/preiter93/tuigram/releases/download/$VERSION/tuigram-$VERSION-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "$SHA_LINUX_ARM"
+              else
+                url "https://github.com/preiter93/tuigram/releases/download/$VERSION/tuigram-$VERSION-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "$SHA_LINUX_INTEL"
+              end
+            end
+
+            def install
+              bin.install "tuigram"
+            end
+
+            test do
+              system "#{bin}/tuigram", "--version"
+            end
+          end
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "homebrew-bot"
+          git config user.email "homebrew-bot@users.noreply.github.com"
+          git add Formula/tuigram.rb
+          git commit -m "tuigram $VERSION"
+          git push
