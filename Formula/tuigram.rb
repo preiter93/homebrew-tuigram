@@ -1,5 +1,5 @@
 class Tuigram < Formula
-  desc "tuigram: Project Aware Command Storage"
+  desc "tuigram: A TUI sequence diagram editor."
   homepage "https://github.com/preiter93/tuigram"
   version "v0.1.3"
   license "MIT"
