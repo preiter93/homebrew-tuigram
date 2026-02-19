@@ -41,7 +41,7 @@ jobs:
         run: |
           cat > Formula/tuigram.rb <<EOF
           class Tuigram < Formula
-            desc "tuigram: Project Aware Command Storage"
+            desc "tuigram: A TUI sequence diagram editor"
             homepage "https://github.com/preiter93/tuigram"
             version "$VERSION"
             license "MIT"
